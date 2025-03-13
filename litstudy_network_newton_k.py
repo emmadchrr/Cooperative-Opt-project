@@ -1,6 +1,11 @@
 import numpy as np
 import pickle
 import matplotlib.pyplot as plt
+import dgd
+from dgd import DGD
+import time
+from concurrent.futures import ThreadPoolExecutor  # For parallel execution
+
 
 def compute_alpha_star(Kmm, Knm, y, sigma2, nu):
     """
@@ -84,7 +89,6 @@ def Network_Newton(X, Y, X_selected, a, nu, sigma2, n_epochs, alpha_star, W, ste
     alphas = []
 
     for epoch in range(n_epochs):
-        print(f"Epoch {epoch}")
         alphas.append(alpha)
         gradients = np.zeros((m*a, 1))
         Hessians = np.zeros((m*a, m*a))
@@ -133,29 +137,49 @@ if __name__ == "__main__":
     n, m, a = 100, 10, 5
     sigma2 = 0.25
     nu = 1
-    K = 3
+    Ks = [1, 2, 3, 5]  # Different values of K to test
     # Generate data
-    x_n=x[:n] 
-    y_n=y[:n]
+    x_n = x[:n] 
+    y_n = y[:n]
 
     sel = [i for i in range(n)]
     ind = np.random.choice(sel, m, replace=False)
     x_selected = np.array([x[i] for i in ind])
     Kmm = compute_kernel_matrix(x_selected, x_selected)
     Knm = compute_kernel_matrix(x_n, x_selected)
-    # Run Network_Newton
-    opt_gaps, alphas = Network_Newton(X=x_n, Y=y_n, X_selected=x_selected, a=a, nu=nu, sigma2=sigma2, n_epochs=100, 
-    alpha_star = compute_alpha_star(Kmm, Knm, y_n, sigma2, nu), W=np.ones((a, a)), step_size=0.01, K = K)
-        
-    # Print the results
-    #print("Optimality gaps:", opt_gaps)
-    #print("Alphas:", alphas)
-    plt.figure(figsize=(10, 8))
-    for i in range(a):
-        plt.plot(opt_gaps[i], label=f'Agent {i+1}')
+    n_epochs = 100
+    alpha_star = compute_alpha_star(Kmm, Knm, y_n, sigma2, nu)
+    W = np.ones((a,a))
+    step_size = 0.001
+
+    # Initialize results
+    results = {}
+
+    # Run DGD
+    start_time = time.time()
+    opt_gaps_dgd, alphas_dgd = DGD(x_n, y_n, x_selected, a, nu, sigma2, n_epochs, alpha_star, W, step_size)
+    dgd_time = time.time() - start_time
+    results['DGD'] = (opt_gaps_dgd, dgd_time, alphas_dgd)
+
+    # Run Network Newton for different K values
+    for K in Ks:
+        start_time = time.time()
+        opt_gaps_nn, alphas_nn = Network_Newton(x_n, y_n, x_selected, a, nu, sigma2, n_epochs, alpha_star, W, step_size, K)
+        nn_time = time.time() - start_time
+        results[f'NN-K={K}'] = (opt_gaps_nn, nn_time, alphas_nn)
+
+    # Plot optimality gaps
+    plt.figure(figsize=(10, 6))
+    for key, (opt_gaps, _, _) in results.items():
+        plt.plot(np.mean(opt_gaps, axis=0), label=key)
     plt.xlabel('Iterations')
     plt.ylabel('Optimality Gap')
-    plt.title('Optimality Gaps for Each Agent')
+    plt.title('Optimality Gap Comparison of DGD and NN Methods')
     plt.legend()
     plt.grid(True)
+    plt.savefig('optimality_gaps.png')
     plt.show()
+
+    # Print convergence times
+    for key, (_, runtime, _) in results.items():
+        print(f'{key} Convergence Time: {runtime:.4f} seconds')

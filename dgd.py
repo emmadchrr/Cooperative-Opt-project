@@ -17,7 +17,6 @@ def DGD(X, Y, X_selected, a, nu, sigma2, n_epochs, alpha_star, W, step_size):
     alphas = []
 
     for epoch in range(n_epochs):
-        print(epoch)
         alphas.append(alpha)
         gradients = np.zeros((m*a, 1))
 
