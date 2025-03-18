@@ -129,6 +129,49 @@ def Network_Newton(X, Y, X_selected, a, nu, sigma2, n_epochs, alpha_star, W, ste
         
     return opt_gaps, alphas
 
+def run_comparison(X, Y, X_selected, a, nu, sigma2, n_epochs, alpha_star, W, step_size, Ks):
+    from copy import deepcopy
+    from tqdm import tqdm
+
+    def network_newton(K):
+        """Implementation of Network Newton with varying K"""
+        opt_gaps, _ = Network_Newton(deepcopy(X), deepcopy(Y), X_selected, a, nu, sigma2, 
+                                     n_epochs, alpha_star, W, step_size, K)
+        return opt_gaps
+
+    def dgd():
+        """Implementation of DGD"""
+        opt_gaps, _ = DGD(deepcopy(X), deepcopy(Y), X_selected, a, nu, sigma2, 
+                          n_epochs, alpha_star, W, step_size)
+        return opt_gaps
+
+    # Run DGD as a baseline
+    opt_gaps_dgd = dgd()
+
+    # Run Network Newton for different values of K
+    opt_gaps_nn = {K: network_newton(K) for K in Ks}
+
+    # Plot results
+    plt.figure(figsize=(12, 7))
+
+    # Plot DGD
+    for i in range(a):
+        plt.plot(opt_gaps_dgd[i], label=f'DGD - Agent {i+1}', linestyle='solid', alpha=0.5)
+
+    # Plot Network Newton for different K values
+    for K in Ks:
+        for i in range(a):
+            plt.plot(opt_gaps_nn[K][i], label=f'NN-K={K} - Agent {i+1}', linestyle='dashed')
+
+    plt.xlabel('Epochs')
+    plt.ylabel('Optimality Gap')
+    plt.title('Comparison of Network Newton (varied K) vs. DGD')
+    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.grid(True)
+    plt.savefig('optimality_gaps_with_agents.png', bbox_inches='tight')
+    plt.show()
+
+
 if __name__ == "__main__":
     # Example usage of Network_Newton
     with open('first_database.pkl', 'rb') as f: # Load data
@@ -152,34 +195,38 @@ if __name__ == "__main__":
     W = np.ones((a,a))
     step_size = 0.001
 
+
+    run_comparison(x_n, y_n, x_selected, a, nu, sigma2, n_epochs, alpha_star, W, step_size, Ks)
+
     # Initialize results
-    results = {}
+
+    #results = {}
 
     # Run DGD
-    start_time = time.time()
-    opt_gaps_dgd, alphas_dgd = DGD(x_n, y_n, x_selected, a, nu, sigma2, n_epochs, alpha_star, W, step_size)
-    dgd_time = time.time() - start_time
-    results['DGD'] = (opt_gaps_dgd, dgd_time, alphas_dgd)
+    #start_time = time.time()
+    #opt_gaps_dgd, alphas_dgd = DGD(x_n, y_n, x_selected, a, nu, sigma2, n_epochs, alpha_star, W, step_size)
+    #dgd_time = time.time() - start_time
+    #results['DGD'] = (opt_gaps_dgd, dgd_time, alphas_dgd)
 
     # Run Network Newton for different K values
-    for K in Ks:
-        start_time = time.time()
-        opt_gaps_nn, alphas_nn = Network_Newton(x_n, y_n, x_selected, a, nu, sigma2, n_epochs, alpha_star, W, step_size, K)
-        nn_time = time.time() - start_time
-        results[f'NN-K={K}'] = (opt_gaps_nn, nn_time, alphas_nn)
+    #for K in Ks:
+    #    start_time = time.time()
+    #    opt_gaps_nn, alphas_nn = Network_Newton(x_n, y_n, x_selected, a, nu, sigma2, n_epochs, alpha_star, W, step_size, K)
+    #    nn_time = time.time() - start_time
+    #    results[f'NN-K={K}'] = (opt_gaps_nn, nn_time, alphas_nn)
 
     # Plot optimality gaps
-    plt.figure(figsize=(10, 6))
-    for key, (opt_gaps, _, _) in results.items():
-        plt.plot(np.mean(opt_gaps, axis=0), label=key)
-    plt.xlabel('Iterations')
-    plt.ylabel('Optimality Gap')
-    plt.title('Optimality Gap Comparison of DGD and NN Methods')
-    plt.legend()
-    plt.grid(True)
-    plt.savefig('optimality_gaps.png')
-    plt.show()
+    #plt.figure(figsize=(10, 6))
+    #for key, (opt_gaps, _, _) in results.items():
+    #    plt.plot(np.mean(opt_gaps, axis=0), label=key)
+    #plt.xlabel('Iterations')
+    #plt.ylabel('Optimality Gap')
+    #plt.title('Optimality Gap Comparison of DGD and NN Methods')
+    #plt.legend()
+    #plt.grid(True)
+    #plt.savefig('optimality_gaps.png')
+    #plt.show()
 
     # Print convergence times
-    for key, (_, runtime, _) in results.items():
-        print(f'{key} Convergence Time: {runtime:.4f} seconds')
+    #for key, (_, runtime, _) in results.items():
+    #    print(f'{key} Convergence Time: {runtime:.4f} seconds')
