@@ -161,14 +161,17 @@ def run_comparison(X, Y, X_selected, a, nu, sigma2, n_epochs, alpha_star, W, ste
     # Plot Network Newton for different K values
     for K in Ks:
         for i in range(a):
-            plt.plot(opt_gaps_nn[K][i], label=f'NN-K={K} - Agent {i+1}', linestyle='dashed')
+            plt.plot(opt_gaps_nn[K][i], label=f'NN-K={K} - Agent {i+1}', linestyle='-.', alpha=0.5)
 
     plt.xlabel('Epochs')
     plt.ylabel('Optimality Gap')
     plt.title('Comparison of Network Newton (varied K) vs. DGD')
     plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.xticks(np.arange(0, n_epochs + 10, step=10))  # Plus de ticks sur X
+    plt.xscale('log')
+    plt.yscale('log')  # Échelle logarithmique pour Y (optionnel)
     plt.grid(True)
-    plt.savefig('optimality_gaps_with_agents.png', bbox_inches='tight')
+    plt.savefig('optimality_gaps_with_agents_scalelog.png', bbox_inches='tight')
     plt.show()
 
 
@@ -180,7 +183,7 @@ if __name__ == "__main__":
     n, m, a = 100, 10, 5
     sigma2 = 0.25
     nu = 1
-    Ks = [1, 2, 3, 5]  # Different values of K to test
+    Ks = [1, 3, 5]  # Different values of K to test
     # Generate data
     x_n = x[:n] 
     y_n = y[:n]
