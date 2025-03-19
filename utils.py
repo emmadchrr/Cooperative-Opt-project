@@ -4,6 +4,8 @@ import pickle
 import networkx as nx
 from tqdm import tqdm
 import time
+from sinkhorn_knopp import sinkhorn_knopp as skp
+
 
 def euclidean_kernel(x, y):
     """

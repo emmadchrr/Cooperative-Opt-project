@@ -1,86 +1,63 @@
 import numpy as np
+from dgd import DGD
 import pickle
 import matplotlib.pyplot as plt
-import dgd
-from dgd import DGD
 import time
-from concurrent.futures import ThreadPoolExecutor  # For parallel execution
 from utils import *
 
-
 def compute_local_Hessian(sigma2, Kmm, Kim, nu, a):
-    """ Compute Local Hessian """
-    Hessian = (sigma2 / a) * Kmm
-    Hessian += Kim.T @ Kim
-    Hessian += (nu / a) * np.eye(Kmm.shape[0])
-    return Hessian
+    """ Compute local Hessian. """
+    return (sigma2 / a) * Kmm + Kim.T @ Kim + (nu / a) * np.eye(Kmm.shape[0])
 
-def Network_Newton(X, Y, X_selected, a, nu, sigma2, n_epochs, alpha_star, W, step_size, K):
+
+def network_newton_k(X, Y, X_selected, a, nu, sigma2, n_epochs, alpha_star, W, step_size, K):
     """
-    Network Newton algorithm for decentralized optimization.
-    
-    Parameters:
-    - X: Input data matrix (n x d)
-    - Y: Output vector (n x 1)
-    - X_selected: Selected data points for kernel computation (m x d)
-    - a: Number of agents
-    - nu: Regularization parameter
-    - sigma2: Kernel parameter
-    - n_epochs: Number of epochs
-    - alpha_star: Optimal alpha (for computing optimality gap)
-    - W: Weight matrix (a x a)
-    - step_size: Step size for gradient descent
-    - K: Number of Taylor series terms to keep in the Newton step approximation
-    
-    Returns:
-    - opt_gaps: List of optimality gaps for each agent
-    - alphas: List of alpha values over epochs
+    Implements the Network Newton-K method.
+
     """
-    m = X_selected.shape[0]
-    n = X.shape[0]
     
-    # Distribute data among agents
+    m = X_selected.shape[0]  # Number of selected points per agent
+    n = X.shape[0]  # Total number of data points
+    alpha = np.zeros((m * a, 1))  # Initialize alpha
+    opt_gaps = [[] for _ in range(a)]  # Store optimality gaps
+
+    # Split data across agents
     a_data_idx = np.array_split(np.random.permutation(n), a)
 
-    # Initialize values
-    alpha = np.zeros((m * a, 1))  # Initial alpha
-    Kmm = compute_kernel_matrix(X_selected, X_selected)  # Kernel matrix
-    opt_gaps = [[] for _ in range(a)]
-    alphas = []
+    # Compute Kernel Matrices
+    Kmm = compute_kernel_matrix(X_selected, X_selected)
 
     for epoch in range(n_epochs):
-        alphas.append(alpha.copy())  # Store alpha for visualization
-        
-        # Compute Local Gradients and Hessians
         gradients = np.zeros((m * a, 1))
         Hessians = np.zeros((m * a, m * a))
 
+        # Compute Local Gradients and Hessians
         for i in range(a):
             data_idx = a_data_idx[i]
             X_loc = X[data_idx]
             y_loc = Y[data_idx].reshape(-1, 1)
             Kim = compute_kernel_matrix(X_loc, X_selected)
 
-            # Compute local gradient
             local_grad = compute_local_gradient(alpha[m*i:m*(i+1)], sigma2, Kmm, y_loc, Kim, nu, a)
             gradients[m*i:m*(i+1)] = local_grad
 
-            # Compute local Hessian
             local_Hessian = compute_local_Hessian(sigma2, Kmm, Kim, nu, a)
             Hessians[m*i:m*(i+1), m*i:m*(i+1)] = local_Hessian
-        
+
+        gradients /= np.linalg.norm(gradients) + 1e-6  
         # Compute D and B Matrices
-        D = np.diag(Hessians)  # Extract diagonal elements (1D array of length 2500)
-        D = np.diagflat(D)
-        B = Hessians - D  # Off-diagonal part
-        D_inv = np.linalg.inv(D + 1e-3 * np.eye(D.shape[0]))  # Strong regularization
+        D = np.diagflat(np.diag(Hessians))  # Extract diagonal as full matrix
+        B = Hessians - D  # Compute off-diagonal part
+        D_inv = np.linalg.inv(D + 1e-2 * np.eye(D.shape[0]))  # Regularized inverse
         B_D_inv = B @ D_inv
 
         # Ensure Convergence of Truncated Taylor Series
-        rho = np.linalg.norm(B_D_inv, ord=2)  # Spectral norm
+        rho = np.linalg.norm(B_D_inv, ord=2)  # Compute spectral norm
+
         if rho >= 1:
-            print(f"Warning: Truncated Newton may diverge (ρ={rho:.3f} ≥ 1). Adjusting step size.")
-            step_size *= 0.5
+            print(f"Reducing Newton steps because ρ={rho:.3f} ≥ 1")
+            K = max(1, K // 2)  # Reduce K dynamically
+
 
         # Truncated Taylor Approximation of H⁻¹
         H_inv_approx = D_inv.copy()
@@ -89,36 +66,29 @@ def Network_Newton(X, Y, X_selected, a, nu, sigma2, n_epochs, alpha_star, W, ste
             H_inv_approx += (-1)**k * B_D_inv_power @ D_inv
             B_D_inv_power = B_D_inv_power @ B_D_inv  # Update power
 
-        # Newton Update (DO NOT apply W here)
-        # Reshape alpha into (a, m) to apply W correctly
-        alpha_reshaped = alpha.reshape(a, m)  
+        # Newton Step Update
+        alpha = alpha - step_size * H_inv_approx @ gradients
 
-        # Apply W across agents
-        alpha_updated = (W @ alpha_reshaped).reshape(m * a, 1)  
+        # Apply Network Consensus Step
+        alpha = (W @ alpha.reshape(a, m)).reshape(m * a, 1)
 
-        # Newton step update
-        alpha = alpha_updated - step_size * H_inv_approx @ gradients
-        
         # Compute Optimality Gaps
         for i in range(a):
             alpha_agent = alpha[m*i:m*(i+1)].reshape(-1, 1)
             opt_gap = np.linalg.norm(alpha_agent - alpha_star.reshape(-1, 1))
             opt_gaps[i].append(opt_gap)
-        print("Alpha norm:", np.linalg.norm(alpha))
-        print("Gradient norm:", np.linalg.norm(gradients))
-        print("Hessian condition number:", np.linalg.cond(Hessians))
 
-    return opt_gaps, alphas
+    return opt_gaps, alpha
 
 def run_comparison(X, Y, X_selected, a, nu, sigma2, n_epochs, alpha_star, W, step_size, Ks):
     from copy import deepcopy
     from tqdm import tqdm
 
-    def network_newton(K):
+    def nn(K):
         """Implementation of Network Newton with varying K"""
-        opt_gaps, _ = Network_Newton(deepcopy(X), deepcopy(Y), X_selected, a, nu, sigma2, 
+        optimal_gaps, _ = network_newton_k(deepcopy(X), deepcopy(Y), X_selected, a, nu, sigma2, 
                                      n_epochs, alpha_star, W, step_size, K)
-        return opt_gaps
+        return optimal_gaps
 
     def dgd():
         """Implementation of DGD"""
@@ -130,7 +100,7 @@ def run_comparison(X, Y, X_selected, a, nu, sigma2, n_epochs, alpha_star, W, ste
     opt_gaps_dgd = dgd()
 
     # Run Network Newton for different values of K
-    opt_gaps_nn = {K: network_newton(K) for K in Ks}
+    optimal_gaps_nn = {K: nn(K) for K in Ks}
 
     # Plot results
     plt.figure(figsize=(12, 7))
@@ -142,17 +112,16 @@ def run_comparison(X, Y, X_selected, a, nu, sigma2, n_epochs, alpha_star, W, ste
     # Plot Network Newton for different K values
     for K in Ks:
         for i in range(a):
-            plt.plot(opt_gaps_nn[K][i], label=f'NN-K={K} - Agent {i+1}', linestyle='-.', alpha=0.5)
+            plt.plot(optimal_gaps_nn[K][i], label=f'NN-K={K} - Agent {i+1}', linestyle='dashed', alpha=0.5)
 
     plt.xlabel('Epochs')
     plt.ylabel('Optimality Gap')
     plt.title('Comparison of Network Newton (varied K) vs. DGD')
     plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-    plt.xticks(np.arange(0, n_epochs + 10, step=10))  # Plus de ticks sur X
-    plt.xscale('log')
+    plt.xscale('log')  # Échelle logarithmique pour X
     plt.yscale('log')  # Échelle logarithmique pour Y (optionnel)
     plt.grid(True)
-    plt.savefig('optimality_gaps_with_agents_scalelog.png', bbox_inches='tight')
+    #plt.savefig('optimality_gaps_with_agents_scalelog.png', bbox_inches='tight')
     plt.show()
 
 
@@ -176,11 +145,13 @@ if __name__ == "__main__":
     Knm = compute_kernel_matrix(x_n, x_selected)
     n_epochs = 100
     alpha_star = compute_alpha_star(Kmm, Knm, y_n, sigma2, nu)
-    W = np.zeros((a, a))
-    step_size = 0.001
+    W = np.zeros((a,a))
+    step_size = 0.01
 
 
     run_comparison(x_n, y_n, x_selected, a, nu, sigma2, n_epochs, alpha_star, W, step_size, Ks)
+
+
 
     # Initialize results
 
