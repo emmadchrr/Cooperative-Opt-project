@@ -70,7 +70,7 @@ if __name__ == "__main__":
     n, m, a = 100, 10, 5
     sigma2 = 0.25
     nu = 1
-    beta = 1
+    beta = 10
     n_epochs = 100
 
     # Generate data
@@ -101,6 +101,8 @@ if __name__ == "__main__":
     plt.plot(opt_gaps)
     plt.xlabel('Iterations')
     plt.ylabel('Optimality Gap')
+    plt.yscale('log')
+    plt.xscale('log')
     plt.title('Optimality Gap of ADMM')
     plt.grid(True)
     plt.savefig('optimality_gaps_admm.png')
