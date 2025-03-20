@@ -13,18 +13,6 @@ def euclidean_kernel(x, y):
     """
     return np.exp(-np.linalg.norm(x - y)**2)
 
-def compute_kernel_matrix(X, Y):
-    """
-    Compute the kernel matrix between two sets of vectors.
-    """
-    rows, cols = X.shape[0], Y.shape[0]
-    K = np.zeros((rows, cols))
-    
-    for i in range(rows):
-        for j in range(cols):
-            K[i, j] = euclidean_kernel(X[i], Y[j])
-    
-    return K
 
 def compute_alpha_star(Kmm, Knm, y, sigma2, nu):
     """
@@ -46,6 +34,33 @@ def local_objective_function(alpha, sigma2, K_mm, y_loc, K_im, nu, a):
     
     return t1 + t2 + t3
 
+def nystrom_approx(alpha, X_selected, X):
+    """
+    Compute the Nystrom approximation.
+    """
+    K1m = compute_kernel_matrix(X, X_selected)
+    return K1m @ alpha
+
+def grad_alpha(sigma2, nu, Y, X, X_selected, alpha, a, m):
+    """
+    Calcule le gradient local pour chaque agent.
+    """
+    Kmm = compute_kernel_matrix(X_selected, X_selected)
+    grad = np.zeros((a, m))
+    
+    if alpha.shape[0] != a * m:
+        raise ValueError(f"Taille de alpha incorrecte: {alpha.shape}, attendu {(a * m, 1)}")
+    
+    alpha = alpha.reshape(a, m)  # Assurer une bonne indexation
+    
+    for i in range(a):
+        K_im = compute_kernel_matrix(X[i].reshape(1, -1), X_selected)  # Assurer la bonne forme
+        K_im_T = K_im.T
+        Y_i = Y[i].reshape(-1, 1) if len(Y[i].shape) == 1 else Y[i]  # Assurer que Y_i a la bonne forme
+        grad[i] = (sigma2 / a) * (Kmm @ alpha[i]) + K_im_T @ (K_im @ alpha[i] - Y_i) + (nu / a) * alpha[i]
+    
+    return grad
+
 def compute_local_gradient(alpha, sigma2, K_mm, y_loc, K_im, nu, a):
     """
     Compute the local gradient.
@@ -56,9 +71,15 @@ def compute_local_gradient(alpha, sigma2, K_mm, y_loc, K_im, nu, a):
     
     return grad
 
-def nystrom_approx(alpha, X_selected, X):
+def compute_kernel_matrix(X, Y):
     """
-    Compute the Nystrom approximation.
+    Compute the kernel matrix between two sets of vectors.
     """
-    K1m = compute_kernel_matrix(X, X_selected)
-    return K1m @ alpha
+    rows, cols = X.shape[0], Y.shape[0]
+    K = np.zeros((rows, cols))
+    
+    for i in range(rows):
+        for j in range(cols):
+            K[i, j] = euclidean_kernel(X[i], Y[j])
+    
+    return K

@@ -116,6 +116,7 @@ if __name__ == "__main__":
     plt.ylabel('Optimality gap (norm)')
     plt.xscale("log")
     plt.yscale("log")
+    #plt.savefig('opt_gaps_dual_dec_with_agents_scalelog.png', bbox_inches='tight')
     plt.grid()
     plt.show()
     # Plot selected points and the prediction of the model with the alpha optimal 
