@@ -152,7 +152,7 @@ def run_comparison(X, Y, X_selected, a, nu, sigma2, n_epochs, alpha_star, W, ste
     plt.xscale('log')
     plt.yscale('log')  # Échelle logarithmique pour Y (optionnel)
     plt.grid(True)
-    plt.savefig('optimality_gaps_with_agents_scalelog.png', bbox_inches='tight')
+    #plt.savefig('optimality_gaps_with_agents_scalelog.png', bbox_inches='tight')
     plt.show()
 
 
