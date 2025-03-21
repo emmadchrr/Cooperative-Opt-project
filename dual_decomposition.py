@@ -58,7 +58,7 @@ if __name__ == "__main__":
     n, m, a = 100, 10, 5
     sigma2 = 0.25
     nu = 1
-    beta = 10
+    beta = 1
     n_epochs = 100
     sigma = 0.5
 
@@ -72,7 +72,7 @@ if __name__ == "__main__":
     Kmm = compute_kernel_matrix(x_selected, x_selected)
     Knm = compute_kernel_matrix(x_n, x_selected)
     alpha_star = compute_alpha_star(Kmm, Knm, y_n, sigma2, nu)
-    W = np.ones((a,a))
+    W = W(a)
     K = compute_kernel_matrix(x_n, x_n)
     selected_pts_agents = np.array_split(np.random.permutation(n), a)
     lr = 0.01
@@ -85,7 +85,7 @@ if __name__ == "__main__":
     start = time.time()
     alpha_optim, alpha_list, alpha_mean_list = dualDec(
         x_n, y_n, x_selected, selected_pts_agents,
-        K, sigma, nu, 0.01, W, max_iter=1000, lamb0=0.
+        K, sigma, nu, 0.1, W, max_iter=10000, lamb0=0.
     )
     end = time.time()
     print(f'alpha optimal with dual decomposition : {alpha_optim}')
