@@ -62,7 +62,7 @@ if __name__ == "__main__":
     beta = 10
     n_epochs = 10000
     sigma = 0.5
-    K = 2  # Order of approximation in NN-K
+    K = 5  # Order of approximation in NN-K
     step_size = 0.01
 
     x_n = x[:n]
@@ -119,15 +119,17 @@ if __name__ == "__main__":
     plt.plot(agent_3, label='Agent 3 - dgd', color='green')
     plt.plot(agent_4, label='Agent 4 - dgd', color='orange')
     plt.plot(agent_5, label='Agent 5 - dgd', color='purple')
-    plt.plot(agent_1_nn, label='Agent 1 - dgd', color='blue', linestyle='dashed')
-    plt.plot(agent_2_nn, label='Agent 2 - dgd', color='red', linestyle='dashed')
-    plt.plot(agent_3_nn, label='Agent 3 - dgd', color='green', linestyle='dashed')
-    plt.plot(agent_4_nn, label='Agent 4 - dgd', color='orange', linestyle='dashed')
-    plt.plot(agent_5_nn, label='Agent 5 - dgd', color='purple', linestyle='dashed')
+    plt.plot(agent_1_nn, label='Agent 1 - nn', color='blue', linestyle='dashed')
+    plt.plot(agent_2_nn, label='Agent 2 - nn', color='red', linestyle='dashed')
+    plt.plot(agent_3_nn, label='Agent 3 - nn', color='green', linestyle='dashed')
+    plt.plot(agent_4_nn, label='Agent 4 - nn', color='orange', linestyle='dashed')
+    plt.plot(agent_5_nn, label='Agent 5 - nn', color='purple', linestyle='dashed')
     plt.xlabel('Iterations')
     plt.ylabel('Optimality gap (norm)')
     plt.xscale("log")
     plt.yscale("log")
-    #plt.savefig('opt_gaps_DGD_with_agents_scalelog.png', bbox_inches='tight')
+    plt.title(f'Optimality gap comparison between DGD and NN-K with K = {K}\n')
+    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.savefig('opt_gaps_DGD_vs_NN.png', bbox_inches='tight')
     plt.grid()
     plt.show()
