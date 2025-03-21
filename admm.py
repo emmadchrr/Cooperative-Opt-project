@@ -28,7 +28,7 @@ def compute_alpha_admm(X, Y, X_selected, selected_pts_agents, nu, sigma2, W, K, 
     return np.linalg.solve(A, b)
 
 def ADMM(X, Y, X_selected, selected_pts_agents, a, nu, sigma2, n_epochs, W, K, beta):
-    """ Algorithme ADMM """
+    """ Algorithm ADMM """
     
     m = len(X_selected)  # Nombre de points sélectionnés
     Z = np.zeros((a, a, m))
