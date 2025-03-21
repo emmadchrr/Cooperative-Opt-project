@@ -83,3 +83,7 @@ def compute_kernel_matrix(X, Y):
             K[i, j] = euclidean_kernel(X[i], Y[j])
     
     return K
+
+def compute_local_Hessian(sigma2, Kmm, Kim, nu, a):
+    """ Compute local Hessian. """
+    return (sigma2 / a) * Kmm + Kim.T @ Kim + (nu / a) * np.eye(Kmm.shape[0])

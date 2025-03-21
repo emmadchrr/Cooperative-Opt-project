@@ -1,5 +1,5 @@
 import numpy as np
-from dgd import DGD
+from dgd_2 import DGD
 import pickle
 import matplotlib.pyplot as plt
 import time
@@ -92,8 +92,7 @@ def run_comparison(X, Y, X_selected, a, nu, sigma2, n_epochs, alpha_star, W, ste
 
     def dgd():
         """Implementation of DGD"""
-        opt_gaps, _ = DGD(deepcopy(X), deepcopy(Y), X_selected, a, nu, sigma2, 
-                          n_epochs, alpha_star, W, step_size)
+        opt_gaps, _ , _ , _ = DGD(deepcopy(X), deepcopy(Y), X_selected, a, nu, sigma2, alpha_star, W, step_size, n_epochs=500)
         return opt_gaps
 
     # Run DGD as a baseline

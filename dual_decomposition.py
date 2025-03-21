@@ -119,16 +119,4 @@ if __name__ == "__main__":
     #plt.savefig('opt_gaps_dual_dec_with_agents_scalelog.png', bbox_inches='tight')
     plt.grid()
     plt.show()
-    # Plot selected points and the prediction of the model with the alpha optimal 
-    plt.figure(0)
-    for i in range(a):
-        plt.plot(x_n[i], y_n[i], 'o', label=f'Agent {i+1}')
-    # plt.plot(x[0:n], y[0:n], 'o', label='Data')
-    x_predict = np.linspace(-1, 1, 250)
-    K_f = compute_kernel_matrix(x_predict, x_selected)
-    # fx_predict = get_Kij(range(n), selected_points, K) @ alpha_optim_gt
-    fx_predict = K_f @ alpha_optim
-    plt.plot(x_predict, fx_predict, label='Prediction')
-    plt.grid()
-    plt.legend()
-    plt.show()
+    
