@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pickle
 import time
-from dgd_2 import DGD
+from methods.dgd import DGD
 from utils import *
 
 def network_newton(X, Y, X_selected, a, nu, sigma2, alpha_star, W, step_size, K, n_epochs=500):

@@ -1,5 +1,5 @@
 import numpy as np
-from dgd_2 import DGD
+from dgd import DGD
 import pickle
 import matplotlib.pyplot as plt
 import time
