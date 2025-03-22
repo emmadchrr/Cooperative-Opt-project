@@ -89,7 +89,7 @@ def compute_local_Hessian(sigma2, Kmm, Kim, nu, a):
     return (sigma2 / a) * Kmm + Kim.T @ Kim + (nu / a) * np.eye(Kmm.shape[0])
 
 def W(a):
-    W=np.identity(a)
+    W = np.identity(a)
     for i in range(4):
         W[i, i+1]=1
         W[i+1, i]=1
