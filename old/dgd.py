@@ -1,7 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
+import sys
+import os
 import networkx as nx
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'methods.utils')))
 from utils import *
 
 

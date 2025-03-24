@@ -11,7 +11,7 @@ def network_newton(X, Y, X_selected, a, nu, sigma2, alpha_star, W, step_size, K,
     """
     m = X_selected.shape[0]
     alpha = np.zeros((a * m, 1))
-    W_bar = np.kron(W / a, np.eye(m))
+    W_bar = np.kron(W / 3, np.eye(m))
     
     optimal_gaps = [[] for _ in range(a)]
     alpha_list_agent = []
@@ -60,10 +60,10 @@ if __name__ == "__main__":
     sigma2 = 0.25
     nu = 1
     beta = 10
-    n_epochs = 10000
+    n_epochs = 1000
     sigma = 0.5
     K = 5  # Order of approximation in NN-K
-    step_size = 0.01
+    step_size = 0.002
 
     x_n = x[:n]
     y_n = y[:n]
@@ -73,7 +73,7 @@ if __name__ == "__main__":
     Kmm = compute_kernel_matrix(x_selected, x_selected)
     Knm = compute_kernel_matrix(x_n, x_selected)
     alpha_star = compute_alpha_star(Kmm, Knm, y_n, sigma2, nu)
-    W = np.ones((a, a))
+    W = W(a)
     
     print("Running DGD...")
     start = time.time()
@@ -114,21 +114,21 @@ if __name__ == "__main__":
     agent_5_nn = np.linalg.norm(np.array(
         [alpha_list_nn[i][4] for i in range(len(alpha_list_nn))]) - alpha_star, axis=1)
 
-    plt.plot(agent_1, label='Agent 1 - dgd', color='blue')
-    plt.plot(agent_2, label='Agent 2 - dgd', color='red')
-    plt.plot(agent_3, label='Agent 3 - dgd', color='green')
-    plt.plot(agent_4, label='Agent 4 - dgd', color='orange')
-    plt.plot(agent_5, label='Agent 5 - dgd', color='purple')
-    plt.plot(agent_1_nn, label='Agent 1 - nn', color='blue', linestyle='dashed')
-    plt.plot(agent_2_nn, label='Agent 2 - nn', color='red', linestyle='dashed')
-    plt.plot(agent_3_nn, label='Agent 3 - nn', color='green', linestyle='dashed')
-    plt.plot(agent_4_nn, label='Agent 4 - nn', color='orange', linestyle='dashed')
-    plt.plot(agent_5_nn, label='Agent 5 - nn', color='purple', linestyle='dashed')
+    plt.plot(agent_1, color='blue')
+    plt.plot(agent_2, color='blue')
+    plt.plot(agent_3, color='blue')
+    plt.plot(agent_4, color='blue')
+    plt.plot(agent_5, label='DGD', color='blue')
+    plt.plot(agent_1_nn, label='NN - {K}', color='red')
+    plt.plot(agent_2_nn, color='red')
+    plt.plot(agent_3_nn, color='red')
+    plt.plot(agent_4_nn, color='red')
+    plt.plot(agent_5_nn, color='red')
     plt.xlabel('Iterations')
     plt.ylabel('Optimality gap (norm)')
     plt.xscale("log")
     plt.yscale("log")
-    plt.title(f'Optimality gap comparison between DGD and NN-K with K = {K}\n')
+    plt.title(f'Optimality gap comparison between DGD and NN-K with K = {K}\nstep_size = {step_size}')
     plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.savefig('opt_gaps_DGD_vs_NN.png', bbox_inches='tight')
     plt.grid()
