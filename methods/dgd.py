@@ -17,7 +17,7 @@ def DGD(X, Y, X_selected, a, nu, sigma2, alpha_star, W, step_size, n_epochs=500)
     alpha = np.zeros((a * m, 1))
     
     # Matrice de poids normalisée
-    W_bar = np.kron(W / 3, np.eye(m))
+    W_bar = np.kron(W, np.eye(m))
     
     # Calcul du noyau entre les points sélectionnés
     Kmm = compute_kernel_matrix(X_selected, X_selected)
@@ -61,10 +61,13 @@ if __name__ == "__main__":
     Knm = compute_kernel_matrix(x_n, x_selected)
     alpha_star = compute_alpha_star(Kmm, Knm, y_n, sigma2, nu)
     #W = np.ones((a, a))
-    W = W(a)
+    #W = W_base(a)
+    #W = fully_connected_graph(a)
+    #W = linear_graph(a)
+    W = small_world_graph(a)
     K = compute_kernel_matrix(x_n, x_n)
     selected_pts_agents = np.array_split(np.random.permutation(n), a)
-    step_size = 0.0009
+    step_size = 0.002
 
     start = time.time()
     alpha_optimal = compute_alpha_star(Kmm, Knm, y_n, sigma2, nu)

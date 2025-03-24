@@ -1,6 +1,5 @@
 import sys
 import os
-#sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'utils')))
 from utils import *
 import numpy as np
 import pickle
@@ -75,7 +74,13 @@ if __name__ == "__main__":
     Kmm = compute_kernel_matrix(x_selected, x_selected)
     Knm = compute_kernel_matrix(x_n, x_selected)
     alpha_star = compute_alpha_star(Kmm, Knm, y_n, sigma2, nu)
-    W = W(a)
+
+    #W = np.ones((a, a))
+    #W = W_base(a)
+    W = fully_connected_graph(a)
+    #W = linear_graph(a)
+    #W = small_world_graph(a)
+
     K = compute_kernel_matrix(x_n, x_n)
     selected_pts_agents = np.array_split(np.random.permutation(n), a)
     lr = 0.01

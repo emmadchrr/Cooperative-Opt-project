@@ -88,11 +88,46 @@ def compute_local_Hessian(sigma2, Kmm, Kim, nu, a):
     """ Compute local Hessian. """
     return (sigma2 / a) * Kmm + Kim.T @ Kim + (nu / a) * np.eye(Kmm.shape[0])
 
-def W(a):
+def W_base(a):
     W = np.identity(a)
     for i in range(4):
-        W[i, i+1]=1
-        W[i+1, i]=1
-    W[0, a-1]=1
-    W[a-1,0]=1
+        W[i, i+1]=1/3
+        W[i+1, i]=1/3
+    W[0, a-1]=1/3
+    W[a-1,0]=1/3
     return W
+
+def normalize_adjacency_matrix(adj_matrix):
+    """
+    Normalize a given adjacency matrix by ensuring row and column sums are balanced.
+    """
+    row_totals = np.sum(adj_matrix, axis=1, keepdims=True)
+    adj_matrix /= row_totals  # Normalize rows
+    col_totals = np.sum(adj_matrix, axis=0, keepdims=True)
+    adj_matrix /= col_totals  # Normalize columns
+    return adj_matrix
+
+def fully_connected_graph(num_nodes):
+    """
+    Constructs a fully connected graph where all nodes are interconnected.
+    """
+    return normalize_adjacency_matrix(np.ones((num_nodes, num_nodes)))
+
+def linear_graph(num_nodes):
+    """
+    Generates a linear graph where each node (except endpoints) is connected to two neighbors.
+    """
+    adj_matrix = np.eye(num_nodes)
+    for i in range(num_nodes - 1):
+        adj_matrix[i, i + 1] = 1
+        adj_matrix[i + 1, i] = 1
+    return normalize_adjacency_matrix(adj_matrix)
+
+def small_world_graph(num_nodes, rewiring_prob=0.1):
+    """
+    Generates a small-world network using the Watts-Strogatz model.
+    """
+    small_world_net = nx.watts_strogatz_graph(num_nodes, k=2, p=rewiring_prob)
+    adj_matrix = nx.to_numpy_array(small_world_net)
+    np.fill_diagonal(adj_matrix, 1)
+    return normalize_adjacency_matrix(adj_matrix)
