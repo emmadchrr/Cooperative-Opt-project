@@ -1,6 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'utils')))
 from utils import *
 
 # Global Constants
@@ -42,13 +45,6 @@ def local_training_step(x, Knm, Kmm, y, batch_dict, num_clients, epochs):
             local_models[j] -= learning_rate * compute_gradient(local_models[j], y, Knm, Kmm, j, batch_dict)
     return local_models
 
-
-def aggregate_models(local_models):
-    """
-    Aggregate local models into a single global model.
-    """
-    return sum(local_models) / len(local_models)
-
 def train_federated(E, optimal_alpha, Knm, Kmm, y, batch_dict, num_clients, max_iter=10000):
     """
     Run the federated training pipeline.
@@ -58,7 +54,7 @@ def train_federated(E, optimal_alpha, Knm, Kmm, y, batch_dict, num_clients, max_
 
     for _ in range(max_iter // E):
         local_models = local_training_step(x, Knm, Kmm, y, batch_dict, num_clients, E)
-        x = aggregate_models(local_models)
+        x = sum(local_models) / len(local_models)
         error_history.append(np.linalg.norm(x - optimal_alpha))
     
     return error_history

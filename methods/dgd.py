@@ -66,7 +66,7 @@ if __name__ == "__main__":
     #W = W(a)
     K = compute_kernel_matrix(x_n, x_n)
     selected_pts_agents = np.array_split(np.random.permutation(n), a)
-    step_size = 0.01
+    step_size = 0.002
 
     start = time.time()
     alpha_optimal = compute_alpha_star(Kmm, Knm, y_n, sigma2, nu)

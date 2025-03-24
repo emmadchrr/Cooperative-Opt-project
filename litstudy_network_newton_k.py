@@ -60,7 +60,7 @@ if __name__ == "__main__":
     sigma2 = 0.25
     nu = 1
     beta = 10
-    n_epochs = 1000
+    n_epochs = 10000
     sigma = 0.5
     K = 5  # Order of approximation in NN-K
     step_size = 0.002
@@ -119,7 +119,7 @@ if __name__ == "__main__":
     plt.plot(agent_3, color='blue')
     plt.plot(agent_4, color='blue')
     plt.plot(agent_5, label='DGD', color='blue')
-    plt.plot(agent_1_nn, label='NN - {K}', color='red')
+    plt.plot(agent_1_nn, label=f'NN - {K}\n', color='red')
     plt.plot(agent_2_nn, color='red')
     plt.plot(agent_3_nn, color='red')
     plt.plot(agent_4_nn, color='red')
@@ -130,6 +130,6 @@ if __name__ == "__main__":
     plt.yscale("log")
     plt.title(f'Optimality gap comparison between DGD and NN-K with K = {K}\nstep_size = {step_size}')
     plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-    plt.savefig('opt_gaps_DGD_vs_NN.png', bbox_inches='tight')
+    #plt.savefig('opt_gaps_DGD_vs_NN.png', bbox_inches='tight')
     plt.grid()
     plt.show()
