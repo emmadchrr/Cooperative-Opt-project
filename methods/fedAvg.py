@@ -18,7 +18,6 @@ sigma = 0.5
 sigma2 = 0.25
 nu = 1.0
 
-
 def compute_kernel_fedavg(indices, selected_x, x):
     """
     Compute the kernel matrix between selected points and all data points.

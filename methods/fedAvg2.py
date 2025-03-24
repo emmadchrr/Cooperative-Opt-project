@@ -26,22 +26,6 @@ def compute_gradient(alpha, y, Knm, Kmm, client_idx, batch_dict):
         Knm[j] * (Knm[j].dot(alpha)) - y[j] * Knm[j] for j in batch_dict[client_idx]
     ])
 
-def local_training_step(x, Knm, Kmm, y, batch_dict, num_clients, epochs):
-    """
-    Perform local training updates on client models.
-    """
-    local_models = [x.copy() for _ in range(num_clients)]
-    for j in range(num_clients):
-        for _ in range(epochs):
-            local_models[j] -= learning_rate * compute_gradient(local_models[j], y, Knm, Kmm, j, batch_dict)
-    return local_models
-
-def aggregate_models(local_models):
-    """
-    Aggregate local models into a single global model.
-    """
-    return sum(local_models) / len(local_models)
-
 def compute_kernel_fedavg(indices, selected_x, x):
     # Exemple de fonction de calcul de noyau
     selected_x = np.array(selected_x).reshape(-1, x.shape[1])  # Conversion en tableau numpy et ajustement des dimensions
