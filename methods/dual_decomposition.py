@@ -7,49 +7,77 @@ import matplotlib.pyplot as plt
 import time
 
     
-def solve_alpha_dualdec(x, y, selected_points, selected_points_agent, sigma, nu, adj_matrix, lamb):
-    # print("lamb shape : ", lamb.shape)
-    n = len(x)
-    a = len(selected_points_agent)
-    m = len(selected_points)
+def solve_alpha(x, y, selected_points, selected_points_agent, sigma, nu, adj_matrix, lamb):
+    """
+    Computes the alpha values for a dual decomposition approach in a distributed kernel-based method."
+    """
+
+    n_samples = len(x)
+    num_agents = len(selected_points_agent)
+    num_selected = len(selected_points)
+    
     Kmm = compute_kernel_matrix(selected_points, selected_points)
-    alpha = []
-    for i in range(a):
-        Kim = compute_kernel_matrix(x[selected_points_agent[i]], selected_points)
-        A = sigma**2 * Kmm + np.eye(m)*nu + np.transpose(Kim) @ Kim
-        b = np.transpose(Kim) @ y[selected_points_agent[i]]
-        for j in range(a):
-            if adj_matrix[i, j] != 0:
-                if i > j:
-                    b-= lamb[i, j, :]
+    # Initialize list to store alpha values for each agent
+    alpha_values = []
+
+    for agent_idx in range(num_agents):
+        Kim = compute_kernel_matrix(x[selected_points_agent[agent_idx]], selected_points)
+        # Construct the system matrix A using kernel properties and regularization
+        A_matrix = sigma**2 * Kmm + np.eye(num_selected) * nu + Kim.T @ Kim
+        b_vector = Kim.T @ y[selected_points_agent[agent_idx]] # Compute the right-hand side vector b
+
+        # Adjust b_vector based on Lagrange multipliers from neighboring agents
+        for neighbor_idx in range(num_agents):
+            if adj_matrix[agent_idx, neighbor_idx] != 0:
+                if agent_idx > neighbor_idx:
+                    b_vector -= lamb[agent_idx, neighbor_idx, :]
                 else:
-                    b+= lamb[j, i, :]
-        alpha.append(np.linalg.solve(A, b))
-    return np.array(alpha)
+                    b_vector += lamb[neighbor_idx, agent_idx, :]
+
+        # Solve the linear system A * alpha = b
+        alpha_values.append(np.linalg.solve(A_matrix, b_vector))
+
+    return np.array(alpha_values)
 
 def dualDec(x, y, selected_points, selected_points_agent, K, sigma, nu, lr, W, max_iter=1000, lamb0=0):
+    """
+    Performs dual decomposition for distributed kernel-based learning."
+    """
+    # Construct the communication graph (binary adjacency matrix)
+    communication_graph = (W > 0).astype(int)
+    
+    num_selected = len(selected_points)
+    num_agents = len(selected_points_agent)
+    
+    # Ensure diagonal of graph is zero (no self-connections)
+    for agent_idx in range(num_agents):
+        communication_graph[agent_idx, agent_idx] = 0
 
-    graph = 1 * (W>0)
-    m = len(selected_points)
-    a = len(selected_points_agent)
-    for i in range(a):
-        graph[i, i] = 0
-    lambda_ij = lamb0*np.ones((a, a, m)) # should be shape number of edges in comnunication graph
+    # Initialize Lagrange multipliers
+    lambda_ij = lamb0 * np.ones((num_agents, num_agents, num_selected))
+
+    # Lists to track alpha values across iterations
     alpha_mean_list = []
     alpha_list_agent = []
+
     for _ in tqdm(range(max_iter)):
-        alpha_optim = np.zeros((a,m))
-        alpha_optim = solve_alpha_dualdec(
-            x, y, selected_points, selected_points_agent, sigma, nu,
-            graph, lambda_ij)
-        for i in range(a):
-            for j in range(i):
-                lambda_ij[i, j, : ] += lr * (alpha_optim[i, :] - alpha_optim[j, :])
+        # Compute optimal alpha values for each agent
+        alpha_optim = solve_alpha(
+            x, y, selected_points, selected_points_agent, sigma, nu, 
+            communication_graph, lambda_ij
+        )
+
+        # Update Lagrange multipliers for connected agents
+        for agent_i in range(num_agents):
+            for agent_j in range(agent_i):  # Only update for i > j
+                lambda_ij[agent_i, agent_j, :] += lr * (alpha_optim[agent_i, :] - alpha_optim[agent_j, :])
+
+        # Track mean alpha values and per-agent alphas over iterations
         alpha_mean_list.append(alpha_optim.mean(axis=0))
         alpha_list_agent.append(alpha_optim)
-    
-    alpha_optim = alpha_optim.reshape(a, m)
-    alpha_optim = np.mean(alpha_optim, axis=0)
+
+    # Compute the final optimized alpha as the mean across agents
+    alpha_optim = np.mean(alpha_optim.reshape(num_agents, num_selected), axis=0)
 
     return alpha_optim, alpha_list_agent, alpha_mean_list
 
@@ -99,11 +127,7 @@ if __name__ == "__main__":
     print(f'alpha optimal with dual decomposition : {alpha_optim}')
     print(
         f'Time to compute alpha optimal with dual decomposition : {end - start}')
-    # print(f'Total iterations : {tot_ite}\n')
 
-    # Data visualization
-    Y = np.linalg.norm(alpha_list - alpha_optim, axis=1)
-    # unpack the list of alpha to get for each agent the evolution of alpha
     agent_1 = np.linalg.norm(np.array(
         [alpha_list[i][0] for i in range(len(alpha_list))]) - alpha_optim, axis=1)
     agent_2 = np.linalg.norm(np.array(

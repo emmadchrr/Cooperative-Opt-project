@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 import pickle
 import sys
 import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'utils')))
 from utils import *
 
 # Global Constants
@@ -179,8 +178,8 @@ def plot_results_different_sel_clients():
     """
     Load data and plot results for different epoch values.
     """
-    with open("first_database.pkl", "rb") as f:
-    #with open("second_database.pkl", "rb") as f:
+    #with open("first_database.pkl", "rb") as f:
+    with open("second_database.pkl", "rb") as f:
         x,y = pickle.load(f)
         x = np.array(x)
         y = np.array(y)

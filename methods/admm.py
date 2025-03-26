@@ -6,88 +6,72 @@ from utils import *
 
 def ADMM(X, Y, X_selected, selected_pts_agents, a, nu, sigma2, n_epochs, W, K, beta):
     """
-    Implémentation de l'ADMM alignée sur la première version fournie.
-    
-    Arguments :
-    - X, Y : Données d'entrée et sorties
-    - X_selected : Points sélectionnés pour l'apprentissage
-    - selected_pts_agents : Liste des indices de points pour chaque agent
-    - a : Nombre d'agents
-    - nu, sigma2 : Paramètres du noyau
-    - n_epochs : Nombre d'itérations
-    - W : Matrice de poids du graphe
-    - K : Matrice de noyau complète
-    - beta : Paramètre de régularisation
-
-    Retourne :
-    - alpha_k : Solution finale
-    - alpha_list : Historique des alpha_k
-    - alpha_mean_list : Moyenne des alpha_k à chaque itération
-    - ecart_alpha_star : Liste des écarts à alpha_star
+    ADMM Implementation
     """
 
-    m = len(X_selected)  # Nombre de points sélectionnés
+    num_selected = len(X_selected)  # Number of selected points
 
-    # Définition des voisins pour chaque agent
-    voisins = [[j for j in range(a) if j != i and W[i, j] > 0.0001] for i in range(a)]
+    # Define neighbors for each agent based on the adjacency matrix
+    neighbors = [[j for j in range(a) if j != i and W[i, j] > 0.0001] for i in range(a)]
 
-    # Calcul des noyaux
+    # Compute kernel matrices
     Kmm = compute_kernel_matrix(X_selected, X_selected)
-    KimKim = [compute_kernel_matrix(X[selected_pts_agents[i]], X_selected).T @ compute_kernel_matrix(X[selected_pts_agents[i]], X_selected) for i in range(a)]
+    KimKim = [compute_kernel_matrix(X[selected_pts_agents[i]], X_selected).T @ 
+              compute_kernel_matrix(X[selected_pts_agents[i]], X_selected) for i in range(a)]
     yKnm = [compute_kernel_matrix(X[selected_pts_agents[i]], X_selected).T @ Y[selected_pts_agents[i]] for i in range(a)]
 
-    # Initialisation des variables duales et auxiliaires
-    lambda_k = dict()
-    y_k = dict()
-    
-    for i in range(a):
-        for j in voisins[i]:
-            lambda_k[i, j] = np.zeros(m)  # Initialisation des multiplicateurs de Lagrange
-            if i < j:
-                s = np.random.rand(m)  # Initialisation aléatoire
-                y_k[i, j] = s
-                y_k[j, i] = s  # Assurer la symétrie
+    # Initialize dual variables and auxiliary variables
+    lambda_k = {}  # Lagrange multipliers
+    y_k = {}  # Auxiliary variables for consensus
 
-    nb_iter = 0
-    ecart_alpha_star = []  # Liste des écarts à alpha_star
+    for i in range(a):
+        for j in neighbors[i]:
+            lambda_k[i, j] = np.zeros(num_selected)  # Initialize Lagrange multipliers
+            if i < j:
+                s = np.random.rand(num_selected)  # Random initialization
+                y_k[i, j] = s
+                y_k[j, i] = s  # Ensure symmetry
+
+    iteration = 0
+    deviation_alpha_star = []  # Track deviation from the optimal alpha_star
     alpha_list = []
     alpha_mean_list = []
 
-    # Calcul de alpha_star (référence optimale)
+    # Compute the reference optimal solution alpha_star
     Knm = compute_kernel_matrix(X, X_selected)
     alpha_star = compute_alpha_star(Kmm, Knm, Y, sigma2, nu)
 
-    while nb_iter <= n_epochs:
-        nb_iter += 1
+    while iteration <= n_epochs:
+        iteration += 1
 
-        # Mise à jour des alpha_k pour chaque agent
+        # Update alpha_k for each agent
         alpha_k = [
             np.linalg.solve(
-                (nu / a) * np.identity(m)
-                + (sigma2 / a) * Kmm
-                + KimKim[i]
-                + sum(beta * np.identity(m) for j in voisins[i]),  # Ajustement pour les voisins
-                
-                yKnm[i] + sum(beta * y_k[i, j] - lambda_k[i, j] for j in voisins[i])
+                (nu / a) * np.identity(num_selected) +
+                (sigma2 / a) * Kmm +
+                KimKim[i] +
+                sum(beta * np.identity(num_selected) for j in neighbors[i]),  # Adjust for neighbors
+
+                yKnm[i] + sum(beta * y_k[i, j] - lambda_k[i, j] for j in neighbors[i])
             )
             for i in range(a)
         ]
-        alpha_k = np.array(alpha_k)  # Convertir en un tableau NumPy
+        alpha_k = np.array(alpha_k)  # Convert to NumPy array
 
+        # Store alpha values for tracking
+        alpha_list.append(alpha_k.copy())  
+        alpha_mean_list.append(np.mean(alpha_k, axis=0))  # Compute mean alpha
 
-        alpha_list.append(alpha_k.copy())  # Sauvegarde des valeurs d'alpha
-        alpha_mean_list.append(np.mean(alpha_k, axis=0))  # Moyenne des alpha
-        
-        # Calcul de l'écart à alpha_star
-        ecart_alpha_star.append([np.linalg.norm(alpha_k[i] - alpha_star) for i in range(a)])
+        # Compute deviation from alpha_star
+        deviation_alpha_star.append([np.linalg.norm(alpha_k[i] - alpha_star) for i in range(a)])
 
-        # Mise à jour des variables auxiliaires y_k et lambda_k
+        # Update auxiliary variables y_k and Lagrange multipliers lambda_k
         for i in range(a):
-            for j in voisins[i]:
-                y_k[i, j] = 0.5 * (alpha_k[i] + alpha_k[j])  # Moyenne des alphas des voisins
-                lambda_k[i, j] += beta * (alpha_k[i] - y_k[i, j])  # Mise à jour des multiplicateurs de Lagrange
+            for j in neighbors[i]:
+                y_k[i, j] = 0.5 * (alpha_k[i] + alpha_k[j])  # Average of neighbor alphas
+                lambda_k[i, j] += beta * (alpha_k[i] - y_k[i, j])  # Update Lagrange multipliers
 
-    return alpha_k, alpha_list, alpha_mean_list, np.array(ecart_alpha_star)
+    return alpha_k, alpha_list, alpha_mean_list, np.array(deviation_alpha_star)
 
 if __name__ == "__main__":
     with open('first_database.pkl', 'rb') as f:
@@ -99,7 +83,7 @@ if __name__ == "__main__":
     beta = 10
     n_epochs = 10000
 
-    # Génération des données
+    # Data Generation
     x_n = x[:n] 
     y_n = y[:n]
 
@@ -119,28 +103,23 @@ if __name__ == "__main__":
     K = compute_kernel_matrix(x_n, x_n)
     selected_pts_agents = np.array_split(np.random.permutation(n), a)
 
-    # Calcul de alpha optimal
     start = time.time()
     alpha_optimal = compute_alpha_star(Kmm, Knm, y_n, sigma2, nu)
     print(f'Time to compute alpha optimal : {time.time() - start}\n')
 
-    # Exécution d'ADMM
     start = time.time()
     alpha_optim, alpha_list, alpha_mean_list, opt_gaps = ADMM(x_n, y_n, x_selected, selected_pts_agents, a, nu, sigma2, n_epochs, W, K, beta)
     admm_time = time.time() - start
 
-    # Vérification des dimensions
     print(f"alpha_optim shape: {alpha_optim.shape}")
     print(f"alpha_list shape: {np.array(alpha_list).shape}")
 
-    # Calcul des écarts de norme pour chaque agent
     agent_1 = np.linalg.norm(np.array([alpha_list[i][0] for i in range(len(alpha_list))]) - alpha_optim[0], axis=1)
     agent_2 = np.linalg.norm(np.array([alpha_list[i][1] for i in range(len(alpha_list))]) - alpha_optim[1], axis=1)
     agent_3 = np.linalg.norm(np.array([alpha_list[i][2] for i in range(len(alpha_list))]) - alpha_optim[2], axis=1)
     agent_4 = np.linalg.norm(np.array([alpha_list[i][3] for i in range(len(alpha_list))]) - alpha_optim[3], axis=1)
     agent_5 = np.linalg.norm(np.array([alpha_list[i][4] for i in range(len(alpha_list))]) - alpha_optim[4], axis=1)
 
-    # Tracé des résultats
     plt.plot(agent_1, label='Agent 1', color='blue')
     plt.plot(agent_2, label='Agent 2', color='red')
     plt.plot(agent_3, label='Agent 3', color='green')

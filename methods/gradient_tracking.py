@@ -5,32 +5,15 @@ import numpy as np
 
 def gradient_tracking(x, y, x_selected, a, nu, sigma2, alpha_star, W, lr, n_epochs = 500):
     """
-    Implémente l'algorithme de Gradient Tracking (GT).
-    
-    Paramètres :
-    - x, y : Données globales
-    - x_selected : Points sélectionnés pour approximation de Nyström
-    - a : Nombre d'agents
-    - nu : Paramètre de régularisation
-    - sigma2 : Hyperparamètre du bruit
-    - alpha_star : Solution optimale pour comparaison
-    - W : Matrice de consensus
-    - lr : Learning rate
-    - n_epochs : Nombre d'itérations
-
-    Retourne :
-    - optimal_gaps : Liste contenant l'évolution de ||alpha^i - alpha_star|| pour chaque agent.
-    - alpha_optim : Dernière valeur de alpha moyenne sur les agents.
-    - alpha_list_agent : Liste des valeurs de alphas à chaque itération pour chaque agent.
-    - alpha_mean_list : Liste des moyennes de alphas sur les agents à chaque itération.
+    Implement the GT algorithm
     """
 
     m = x_selected.shape[0]
 
-    alpha = np.zeros((a * m, 1))        # Paramètres locaux des agents (a*m, 1)
-    g = np.zeros((a * m, 1))            # Terme de suivi du gradient (a*m, 1)
+    alpha = np.zeros((a * m, 1))        # local parameters of the agents
+    g = np.zeros((a * m, 1))            # gradient tracking term (a*m, 1)
 
-    W_bar = np.kron(W, np.eye(m))   # Matrice de consensus
+    W_bar = np.kron(W, np.eye(m))   # Consensus matrix
 
     Kmm = compute_kernel_matrix(x_selected, x_selected)
 
@@ -38,18 +21,18 @@ def gradient_tracking(x, y, x_selected, a, nu, sigma2, alpha_star, W, lr, n_epoc
     alpha_list_agent = []
     alpha_mean_list = []
 
-    # initialisation du gradient
+    # initialization of the gradient
     grad_old = grad_alpha(sigma2, nu, y, x, x_selected, alpha, a, m).reshape((a * m, 1))  # (a, m)
     g = grad_old.copy()
 
     for epoch in range(n_epochs):
-        # Mise à jour de alpha_i en utilisant g
+        # Update alpha_i using g
         alpha = W_bar @ alpha - lr * g
 
         # Calcul du nouveau gradient
         grad_new = grad_alpha(sigma2, nu, y, x, x_selected, alpha, a, m).reshape((a * m, 1))  # (a, m)
 
-        # Mise à jour de g^i (suivi du gradient)
+        # Update g^i
         g = (W_bar @ g + (grad_new - grad_old))
 
         grad_old = grad_new
@@ -109,11 +92,7 @@ if __name__ == "__main__":
     print(f'alpha optimal with DGD : {alpha_optim}')
     print(
         f'Time to compute alpha optimal with DGD : {end - start}')
-    # print(f'Total iterations : {tot_ite}\n')
-
-    # Data visualization
-    Y = np.linalg.norm(alpha_list - alpha_optim, axis=1)
-    # unpack the list of alpha to get for each agent the evolution of alpha
+    
     agent_1 = np.linalg.norm(np.array(
         [alpha_list[i][0] for i in range(len(alpha_list))]) - alpha_optim, axis=1)
     agent_2 = np.linalg.norm(np.array(

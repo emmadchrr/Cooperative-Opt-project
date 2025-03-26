@@ -84,9 +84,13 @@ def compute_kernel_matrix(X, Y):
     
     return K
 
-def compute_local_Hessian(sigma2, Kmm, Kim, nu, a):
+def compute_local_Hessian1(sigma2, Kmm, Kim, nu, a):
     """ Compute local Hessian. """
     return (sigma2 / a) * Kmm + Kim.T @ Kim + (nu / a) * np.eye(Kmm.shape[0])
+
+def compute_local_Hessian(sigma2, Kmm, Kmi, nu, a):
+    """Compute local Hessian for an agent"""
+    return Kmm + (sigma2/(nu*a)) * Kmi @ Kmi.T
 
 def W_base(a):
     W = np.identity(a)
@@ -95,6 +99,15 @@ def W_base(a):
         W[i+1, i]=1/3
     W[0, a-1]=1/3
     W[a-1,0]=1/3
+    return W
+
+def W_base_bis(a):
+    W = np.identity(a)
+    for i in range(4):
+        W[i, i+1]=1
+        W[i+1, i]=1
+    W[0, a-1]=1
+    W[a-1,0]=1
     return W
 
 def normalize_adjacency_matrix(adj_matrix):

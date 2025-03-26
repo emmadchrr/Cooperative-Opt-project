@@ -13,13 +13,13 @@ def DGD(X, Y, X_selected, a, nu, sigma2, alpha_star, W, step_size, n_epochs=500)
     """
     m = X_selected.shape[0]
     
-    # Initialisation de alpha
+    # Initialization of alpha
     alpha = np.zeros((a * m, 1))
     
-    # Matrice de poids normalisée
-    W_bar = np.kron(W, np.eye(m))
+    #Normalized Weight Matrix
+    W_bar = np.kron(W / 3, np.eye(m))
     
-    # Calcul du noyau entre les points sélectionnés
+    # Kernel computation between selected points
     Kmm = compute_kernel_matrix(X_selected, X_selected)
     
     optimal_gaps = [[] for _ in range(a)]
@@ -62,9 +62,10 @@ if __name__ == "__main__":
     alpha_star = compute_alpha_star(Kmm, Knm, y_n, sigma2, nu)
     #W = np.ones((a, a))
     #W = W_base(a)
+    W = W_base_bis(a)
     #W = fully_connected_graph(a)
     #W = linear_graph(a)
-    W = small_world_graph(a)
+    #W = small_world_graph(a)
     K = compute_kernel_matrix(x_n, x_n)
     selected_pts_agents = np.array_split(np.random.permutation(n), a)
     step_size = 0.002
@@ -82,11 +83,7 @@ if __name__ == "__main__":
     print(f'alpha optimal with DGD : {alpha_optim}')
     print(
         f'Time to compute alpha optimal with DGD : {end - start}')
-    # print(f'Total iterations : {tot_ite}\n')
 
-    # Data visualization
-    Y = np.linalg.norm(alpha_list - alpha_optim, axis=1)
-    # unpack the list of alpha to get for each agent the evolution of alpha
     agent_1 = np.linalg.norm(np.array(
         [alpha_list[i][0] for i in range(len(alpha_list))]) - alpha_optim, axis=1)
     agent_2 = np.linalg.norm(np.array(

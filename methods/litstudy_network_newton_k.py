@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pickle
 import time
-from methods.dgd import DGD
+from dgd import DGD
 from utils import *
 
 def network_newton(X, Y, X_selected, a, nu, sigma2, alpha_star, W, step_size, K, n_epochs=500):
@@ -73,7 +73,7 @@ if __name__ == "__main__":
     Kmm = compute_kernel_matrix(x_selected, x_selected)
     Knm = compute_kernel_matrix(x_n, x_selected)
     alpha_star = compute_alpha_star(Kmm, Knm, y_n, sigma2, nu)
-    W = W(a)
+    W = W_base_bis(a)
     
     print("Running DGD...")
     start = time.time()
