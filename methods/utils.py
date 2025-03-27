@@ -181,3 +181,12 @@ def small_world_graph(num_nodes, rewiring_prob=0.1):
     adj_matrix = nx.to_numpy_array(small_world_net)
     np.fill_diagonal(adj_matrix, 1)
     return normalize_adjacency_matrix(adj_matrix)
+
+def compute_alpha(x, y, x_selected, sigma, mu):
+    n = len(x)
+    m = len(x_selected)
+    Kmm = compute_kernel_matrix(x_selected, x_selected)
+    Knm = compute_kernel_matrix(x[0:n], x_selected)
+    alpha_exact = np.linalg.inv(
+        sigma**2*Kmm + mu*np.eye(m) + np.transpose(Knm) @ Knm) @ np.transpose(Knm) @ y[0:n]
+    return alpha_exact

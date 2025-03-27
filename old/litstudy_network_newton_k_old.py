@@ -3,7 +3,7 @@ from dgd import DGD
 import pickle
 import matplotlib.pyplot as plt
 import time
-from utils import *
+from methods.utils import *
 
 def compute_local_Hessian(sigma2, Kmm, Kim, nu, a):
     """ Compute local Hessian. """

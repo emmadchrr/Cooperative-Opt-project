@@ -92,9 +92,6 @@ if __name__ == "__main__":
     end = time.time()
     print(f'Network Newton time: {end - start}')
     
-    # Data visualization
-    Y_dgd = np.linalg.norm(alpha_list_dgd - alpha_star, axis=1)
-    # unpack the list of alpha to get for each agent the evolution of alpha
     agent_1 = np.linalg.norm(np.array(
         [alpha_list_dgd[i][0] for i in range(len(alpha_list_dgd))]) - alpha_star, axis=1)
     agent_2 = np.linalg.norm(np.array(
@@ -106,8 +103,6 @@ if __name__ == "__main__":
     agent_5 = np.linalg.norm(np.array(
         [alpha_list_dgd[i][4] for i in range(len(alpha_list_dgd))]) - alpha_star, axis=1)
 
-    Y_nn = np.linalg.norm(alpha_list_nn - alpha_star, axis=1)
-    # unpack the list of alpha to get for each agent the evolution of alpha
     agent_1_nn = np.linalg.norm(np.array(
         [alpha_list_nn[i][0] for i in range(len(alpha_list_nn))]) - alpha_star, axis=1)
     agent_2_nn = np.linalg.norm(np.array(

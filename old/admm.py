@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pickle
 import time
-from utils import *
+from methods.utils import *
 
 def compute_alpha_admm(X, Y, X_selected, selected_pts_agents, nu, sigma2, W, K, Z, Lambda, beta, node_idx):
     """ Calcul de alpha pour ADMM. """
