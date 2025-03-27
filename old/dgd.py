@@ -5,7 +5,7 @@ import sys
 import os
 import networkx as nx
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'methods.utils')))
-from utils import *
+from methods.utils import *
 
 
 def DGD(X, Y, X_selected, a, nu, sigma2, n_epochs, alpha_star, W, step_size):
