@@ -26,10 +26,15 @@ def fedAvg(X, Y, x_m_points, T, E, K, Kim, sigma, nu, lr, B=None):
     
     # Compute true optimal solution using all data
     alpha_optim = compute_alpha(np.concatenate(X), np.concatenate(Y), x_m_points, sigma, nu)
+    total_iterations = 0
     
     for t in range(T):
         # Client updates
         for epoch in range(E):
+            total_iterations += 1
+            if total_iterations > 5000:  # Critère d'arrêt
+                print(f"Stopping early at T={t+1}, Epoch={epoch+1}, Total Iterations={total_iterations}")
+                return alpha_server, optimal_gaps
             grad = grad_alpha_fedavg(sigma, nu, Y, alpha_agents, K, Kim, C, m)
             alpha_agents -= lr * grad
         
@@ -84,6 +89,7 @@ def run_experiments(X_full, Y_full, config):
     plt.ylabel('Optimal Gap')
     plt.title(f'Varying Batch Sizes (C={config["C"]}, E={config["E"]})')
     plt.yscale('log')
+    plt.xscale('log')
     plt.legend()
     plt.grid(True)
     plt.show()
@@ -106,6 +112,7 @@ def run_experiments(X_full, Y_full, config):
     plt.ylabel('Optimal Gap')
     plt.title(f'Client Selection Variability (C={config["C"]}, E={config["E"]})')
     plt.yscale('log')
+    plt.xscale
     plt.legend()
     plt.grid(True)
     plt.show()
@@ -122,12 +129,12 @@ if __name__ == "__main__":
         'C': 5,          # Number of clients
         'B': 20,         # Batch size
         'E': 20,          # Base number of epochs
-        'T': 300,         # Communication rounds
+        'T': 10000,         # Communication rounds
         'base_m': 10,    # Base batch size
         'sigma': 0.5,
         'nu': 10,
         'lr': 0.002,
-        'E_values': [1, 5, 10, 20, 50],
+        'E_values': [1, 5, 50],
         'm_values': [5, 10, 15, 20],
         'num_selections': 5
     }
