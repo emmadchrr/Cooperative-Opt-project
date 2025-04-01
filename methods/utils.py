@@ -43,8 +43,9 @@ def nystrom_approx(alpha, X_selected, X):
 
 def grad_alpha(sigma2, nu, Y, X, X_selected, alpha, a, m):
     """
-    Calcule le gradient local pour chaque agent.
+    Calcule le gradient pour chaque agent.
     """
+
     Kmm = compute_kernel_matrix(X_selected, X_selected)
     grad = np.zeros((a, m))
     
@@ -58,8 +59,44 @@ def grad_alpha(sigma2, nu, Y, X, X_selected, alpha, a, m):
         K_im_T = K_im.T
         Y_i = Y[i].reshape(-1, 1) if len(Y[i].shape) == 1 else Y[i]  # Assurer que Y_i a la bonne forme
         grad[i] = (sigma2 / a) * (Kmm @ alpha[i]) + K_im_T @ (K_im @ alpha[i] - Y_i) + (nu / a) * alpha[i]
+        
     
     return grad
+
+def grad_alpha_(sigma2, nu, Y, X, X_selected, alpha, A, m):
+    """
+    Calcule le gradient pour chaque agent.
+    """
+    a = len(A)
+    Kmm = compute_kernel_matrix(X_selected, X_selected)
+    grad = np.zeros((a, m))
+    
+    if alpha.shape[0] != a * m:
+        raise ValueError(f"Taille de alpha incorrecte: {alpha.shape}, attendu {(a * m, 1)}")
+    
+    alpha = alpha.reshape(a, m)  # Assurer une bonne indexation
+    
+    for i in range(a):
+        K_im = compute_kernel_matrix(X[A[i]], X_selected)  # Assurer la bonne forme
+        grad[i, :] = (sigma2 / a) * (Kmm @ alpha[i,:]) + K_im.T @ (K_im @ alpha[i] - Y[A[i]]) + (nu / a) * alpha[i, :]
+    
+    return grad
+
+def compute_hessian_alpha(sigma2, nu, Y, X, X_selected, alpha, A, m):
+    """
+    Compute the Hessian 
+    """
+    a = len(A)
+    Kmm = compute_kernel_matrix(X_selected, X_selected)
+    Hessian = np.zeros((a*m, a*m))
+    
+    alpha = alpha.reshape(a, m)  # Assurer une bonne indexation
+    
+    for i in range(a):
+        K_im = compute_kernel_matrix(X[A[i]], X_selected)  # Assurer la bonne forme
+        Hessian[i*m:(i+1)*m, i*m:(i+1)*m] = (sigma2 / a) * Kmm + K_im.T @ K_im + (nu / a) * np.eye(m)
+    
+    return Hessian
 
 def compute_local_gradient(alpha, sigma2, K_mm, y_loc, K_im, nu, a):
     """
