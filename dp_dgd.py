@@ -68,7 +68,7 @@ if __name__ == "__main__":
     sigma2 = 0.25
     nu = 1
     beta = 10
-    n_epochs = 10000
+    n_epochs = 100
     sigma = 0.5
     noise_scales = [0.1, 1, 10]
     colors = ['blue', 'orange', 'green']

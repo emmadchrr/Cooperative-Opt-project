@@ -51,7 +51,7 @@ if __name__ == "__main__":
     sigma2 = 0.25
     nu = 1
     beta = 10
-    n_epochs = 20000
+    n_epochs = 100
     sigma = 0.5
     step_size = 0.002
 

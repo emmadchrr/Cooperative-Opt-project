@@ -55,7 +55,7 @@ if __name__ == "__main__":
     sigma2 = 0.25
     nu = 1
     lr = 0.01
-    nb_epochs = 1000
+    nb_epochs = 100
     E = 10
     C = 5
     B = 20

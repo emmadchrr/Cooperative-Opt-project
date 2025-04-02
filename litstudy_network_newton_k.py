@@ -60,10 +60,10 @@ if __name__ == "__main__":
     sigma2 = 0.25
     nu = 1
     beta = 10
-    n_epochs = 10000
+    n_epochs = 100
     sigma = 0.5
     K = 2# Order of approximation in NN-K
-    step_size = 0.002
+    step_size = 0.05
 
     x_n = x[:n]
     y_n = y[:n]
@@ -79,12 +79,7 @@ if __name__ == "__main__":
     Knm = compute_kernel_matrix(x_n, x_selected)
     alpha_star = compute_alpha_star(Kmm, Knm, y_n, sigma2, nu)
     W = W_base_bis(a)
-    
-    print("Running DGD...")
-    start = time.time()
-    opt_gaps_dgd, alpha_optim_dgd, alpha_list_dgd, alpha_mean_list_dgd = DGD(x_n, y_n, x_selected, a, nu, sigma2, alpha_star, W, step_size, n_epochs)
-    end = time.time()
-    print(f'DGD time: {end - start}')
+
     
     print("Running Network Newton...")
     start = time.time()
@@ -92,16 +87,6 @@ if __name__ == "__main__":
     end = time.time()
     print(f'Network Newton time: {end - start}')
     
-    agent_1 = np.linalg.norm(np.array(
-        [alpha_list_dgd[i][0] for i in range(len(alpha_list_dgd))]) - alpha_star, axis=1)
-    agent_2 = np.linalg.norm(np.array(
-        [alpha_list_dgd[i][1] for i in range(len(alpha_list_dgd))]) - alpha_star, axis=1)
-    agent_3 = np.linalg.norm(np.array(
-        [alpha_list_dgd[i][2] for i in range(len(alpha_list_dgd))]) - alpha_star, axis=1)
-    agent_4 = np.linalg.norm(np.array(
-        [alpha_list_dgd[i][3] for i in range(len(alpha_list_dgd))]) - alpha_star, axis=1)
-    agent_5 = np.linalg.norm(np.array(
-        [alpha_list_dgd[i][4] for i in range(len(alpha_list_dgd))]) - alpha_star, axis=1)
 
     agent_1_nn = np.linalg.norm(np.array(
         [alpha_list_nn[i][0] for i in range(len(alpha_list_nn))]) - alpha_star, axis=1)
@@ -114,11 +99,6 @@ if __name__ == "__main__":
     agent_5_nn = np.linalg.norm(np.array(
         [alpha_list_nn[i][4] for i in range(len(alpha_list_nn))]) - alpha_star, axis=1)
 
-    plt.plot(agent_1, color='blue')
-    plt.plot(agent_2, color='blue')
-    plt.plot(agent_3, color='blue')
-    plt.plot(agent_4, color='blue')
-    plt.plot(agent_5, label='DGD agents', color='blue')
     plt.plot(agent_1_nn,  label=f'NN-{K} agent', color='red')
     plt.plot(agent_2_nn,  color='red')
     plt.plot(agent_3_nn,  color='red')

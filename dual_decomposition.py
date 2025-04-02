@@ -114,7 +114,7 @@ if __name__ == "__main__":
     print(f'Time to compute alpha optimal : {end - start}\n')
     print(f'Optimal alpha : {alpha_optimal}\n')
     start = time.time()
-    alpha_optim, alpha_list, alpha_mean_list = dual_decomposition(x_n, y_n, x_selected, A, sigma2, nu, 0.1, W, nb_epochs=n_epochs, lamb0=0.0)
+    alpha_optim, alpha_list, alpha_mean_list = dual_decomposition(x_n, y_n, x_selected, A, nu, sigma2, W, step_size=step_size, nb_epochs=n_epochs, lamb0=0.0)
     end = time.time()
     print(f'alpha optimal with dual decomposition : {alpha_optim}')
     print(
