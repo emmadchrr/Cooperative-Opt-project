@@ -7,6 +7,25 @@ import time
 from sinkhorn_knopp import sinkhorn_knopp as skp
 
 
+def f(alpha, kmm, knm, y, sigma2, nu):
+    """
+    Compute the objective function value.
+    """
+    t1 = (sigma2 / 2) * np.dot(alpha.T, kmm @ alpha)
+    t2 = 0.5 * np.sum((y - knm @ alpha) ** 2)
+    t3 = (nu / 2) * np.linalg.norm(alpha) ** 2
+    return t1 + t2 + t3
+    
+
+def f_bis(alpha,x_m_points,X,Y,sigma2):
+    K_mm = compute_kernel_matrix(x_m_points,x_m_points)
+    K_nm = compute_kernel_matrix(X.flatten(),x_m_points)
+    terme_1 = (sigma2/2)*np.dot(alpha.T,K_mm@alpha)
+    terme_2 = 0.5*np.linalg.norm(Y.flatten() - K_nm@alpha,ord=2)**2
+    terme_3 = (1/2)*np.linalg.norm(alpha)**2
+    
+    return terme_1 + terme_2 + terme_3
+
 def euclidean_kernel(x, y):
     """
     Compute the Euclidean kernel between two vectors.
@@ -41,31 +60,9 @@ def nystrom_approx(alpha, X_selected, X):
     K1m = compute_kernel_matrix(X, X_selected)
     return K1m @ alpha
 
-def grad_alpha(sigma2, nu, Y, X, X_selected, alpha, a, m):
+def grad_alpha(sigma2, nu, Y, X, X_selected, alpha, A, m):
     """
-    Calcule le gradient pour chaque agent.
-    """
-
-    Kmm = compute_kernel_matrix(X_selected, X_selected)
-    grad = np.zeros((a, m))
-    
-    if alpha.shape[0] != a * m:
-        raise ValueError(f"Taille de alpha incorrecte: {alpha.shape}, attendu {(a * m, 1)}")
-    
-    alpha = alpha.reshape(a, m)  # Assurer une bonne indexation
-    
-    for i in range(a):
-        K_im = compute_kernel_matrix(X[i].reshape(1, -1), X_selected)  # Assurer la bonne forme
-        K_im_T = K_im.T
-        Y_i = Y[i].reshape(-1, 1) if len(Y[i].shape) == 1 else Y[i]  # Assurer que Y_i a la bonne forme
-        grad[i] = (sigma2 / a) * (Kmm @ alpha[i]) + K_im_T @ (K_im @ alpha[i] - Y_i) + (nu / a) * alpha[i]
-        
-    
-    return grad
-
-def grad_alpha_(sigma2, nu, Y, X, X_selected, alpha, A, m):
-    """
-    Calcule le gradient pour chaque agent.
+    Calcule le gradient.
     """
     a = len(A)
     Kmm = compute_kernel_matrix(X_selected, X_selected)
@@ -190,3 +187,108 @@ def compute_alpha(x, y, x_selected, sigma, mu):
     alpha_exact = np.linalg.inv(
         sigma**2*Kmm + mu*np.eye(m) + np.transpose(Knm) @ Knm) @ np.transpose(Knm) @ y[0:n]
     return alpha_exact
+
+
+
+def plot_optimality_gaps(alpha_list, alpha_optim, log_scale=True, save_path=None, title=None):
+    """
+    Plot optimality gaps for each agent over iterations.
+    
+    Parameters:
+    -----------
+    alpha_list : list
+        List of alpha values for all agents at each iteration
+    alpha_optim : numpy.ndarray
+        The optimal alpha value to compare against
+    log_scale : bool, optional
+        Whether to use logarithmic scale for x and y axes (default: True)
+    save_path : str, optional
+        Path to save the figure (default: None, no saving)
+    """
+    import numpy as np
+    import matplotlib.pyplot as plt
+    
+    # Number of agents
+    num_agents = len(alpha_list[0])
+    
+    # Calculate optimality gap for each agent
+    agent_gaps = []
+    for agent_idx in range(num_agents):
+        agent_alphas = np.array([alpha_list[i][agent_idx] for i in range(len(alpha_list))])
+        agent_gap = np.linalg.norm(agent_alphas - alpha_optim, axis=1)
+        agent_gaps.append(agent_gap)
+    
+    # Plot the optimality gaps
+    plt.figure(figsize=(10, 6))
+    colors = ['blue', 'red', 'green', 'orange', 'purple', 'brown', 'pink', 'gray', 'olive', 'cyan']
+    
+    for agent_idx in range(num_agents):
+        plt.plot(
+            agent_gaps[agent_idx], 
+            label=f'Agent {agent_idx+1}', 
+            color=colors[agent_idx % len(colors)]
+        )
+    
+    plt.xlabel('Iterations')
+    plt.ylabel('Optimality gap (norm)')
+    
+    if log_scale:
+        plt.xscale("log")
+        plt.yscale("log")
+    
+    plt.grid(True)
+    plt.legend(loc='lower left', ncols=1, fontsize=8)
+    if title:
+        plt.title(title)
+    else :    
+        plt.title('Optimality Gap per Agent')
+    plt.tight_layout()
+    
+    if save_path:
+        plt.savefig(save_path, bbox_inches='tight')
+    else :
+        plt.show()
+    
+    
+
+def plot_multi_method(method_results, alpha_optim, method_names, log_scale=True, save_path=None, title = None):
+
+    plt.figure(figsize=(12, 8))
+    
+    colors = ['blue', 'red', 'green', 'orange', 'purple', 'brown', 'pink', 'gray', 'olive', 'cyan']
+    
+    for method_idx, alpha_list in enumerate(method_results):
+        num_agents = len(alpha_list[0])
+        method_color = colors[method_idx % len(colors)]
+        
+        for agent_idx in range(num_agents):
+            agent_alphas = np.array([alpha_list[i][agent_idx] for i in range(len(alpha_list))])
+            agent_gap = np.linalg.norm(agent_alphas - alpha_optim, axis=1)
+            
+            plt.plot(
+                agent_gap, 
+                label=f'{method_names[method_idx]} - Agent {agent_idx+1}',
+                color=method_color,
+                alpha=0.7 + 0.3 * (agent_idx / num_agents)  # Varying opacity for agents
+            )
+    
+    plt.xlabel('Iterations')
+    plt.ylabel('Optimality gap (norm)')
+    
+    if log_scale:
+        plt.xscale("log")
+        plt.yscale("log")
+    
+    plt.grid(True)
+    plt.legend(loc='lower left', fontsize=8, ncols = len(method_results))
+    if title:
+        plt.title(title)
+    else:
+        plt.title('Optimality Gap per Agent for Multiple Methods')
+    
+    plt.tight_layout()
+    
+    if save_path:
+        plt.savefig(save_path, bbox_inches='tight')
+    
+    plt.show()

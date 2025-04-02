@@ -26,28 +26,25 @@ def directed_push_sum(n, adjacency_matrix, initial_values, max_iter=1000):
     history = []
     epsilon = 1e-10
 
-    out_degrees = adjacency_matrix.sum(axis=1)  # Degré de sortie de chaque nœud
-    out_degrees[out_degrees == 0] = 1  # Éviter la division par 0
+    out_degrees = adjacency_matrix.sum(axis=1)  #
+    out_degrees[out_degrees == 0] = 1  
 
     for k in range(max_iter):
         print(f"Itération {k}/{max_iter}")
         if k % 100 == 0:  # Pour ne pas imprimer trop souvent
             print("Valeurs actuelles:", values)
         
-        # Normalisation avant envoi
         normalized_values = values / (1 + out_degrees)[:, None]
         normalized_weights = weights / (1 + out_degrees)
 
         # Envoi des valeurs aux voisins
-        new_values = normalized_values.T @ adjacency_matrix  # Somme des alpha_j pour chaque nœud
-        new_weights = normalized_weights @ adjacency_matrix  # Somme des φ_j pour chaque nœud
+        new_values = normalized_values.T @ adjacency_matrix 
+        new_weights = normalized_weights @ adjacency_matrix  
 
-        # Ajout de la propre contribution du nœud
-        new_values += normalized_values[:, 0]  # Inclure sa propre valeur
-        new_weights += normalized_weights  # Inclure son propre poids
-
+        new_values += normalized_values[:, 0]  
+        new_weights += normalized_weights  
         # Calcul du ratio z_k+1^i = alpha_k+1^i / φ_k+1^i
-        new_values = new_values / (new_weights + epsilon) # évite la division par de trop petites valeurs
+        new_values = new_values / (new_weights + epsilon) 
         
         values, weights = new_values, new_weights
         history.append(values)
@@ -60,13 +57,6 @@ def run_experiment_with_push_sum(x, y, X_selected, selected_pts_agents, W, K, si
     """
     n = len(x)
     a = len(W)
-    
-    # Initialisation des valeurs (alpha)
-    #initial_values = np.mean(y) # initialisation à partir des données
-    #initial_values = np.full(a, initial_values)
-
-    # Valeurs aléatoires pour tester la robustesse
-    #initial_values = np.random.normal(np.mean(y), np.std(y), a)
     
     # Chaque agent commence avec la moyenne de ses propres données
     initial_values = np.zeros(a)
@@ -143,7 +133,7 @@ if __name__ == "__main__":
         x_n, y_n, x_selected, selected_pts_agents, W, K, sigma, nu, beta, n_epochs
     )
 
-    print(f'Écart final à l’optimalité: {optimality_gaps[0]}')
+    print(f'Écart final à l\'optimalité: {optimality_gaps[0]}')
 
 
 

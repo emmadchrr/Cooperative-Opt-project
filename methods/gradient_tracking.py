@@ -3,36 +3,32 @@ import os
 from utils import *
 import numpy as np
 
-def gradient_tracking(x, y, x_selected, a, nu, sigma2, alpha_star, W, lr, n_epochs = 500):
+def gradient_tracking(x, y, X_selected, A, nu, sigma2, alpha_star, W, step_size, n_epochs = 500):
     """
     Implement the GT algorithm
     """
-
-    m = x_selected.shape[0]
-
+    a = len(A)
+    m = X_selected.shape[0]
     alpha = np.zeros((a * m, 1))        # local parameters of the agents
     g = np.zeros((a * m, 1))            # gradient tracking term (a*m, 1)
-
     W_bar = np.kron(W, np.eye(m))   # Consensus matrix
 
-    Kmm = compute_kernel_matrix(x_selected, x_selected)
 
     optimal_gaps = [[] for _ in range(a)]
     alpha_list_agent = []
     alpha_mean_list = []
 
     # initialization of the gradient
-    grad_old = grad_alpha(sigma2, nu, y, x, x_selected, alpha, a, m).reshape((a * m, 1))  # (a, m)
+    grad_old = grad_alpha(sigma2, nu, y, x, X_selected, alpha, A, m).reshape((a * m, 1))  # (a, m)
     g = grad_old.copy()
 
     for epoch in range(n_epochs):
-        # Update alpha_i using g
-        alpha = W_bar @ alpha - lr * g
+        # update alpha_i using g
+        alpha = W_bar @ alpha - step_size * g
 
-        # Calcul du nouveau gradient
-        grad_new = grad_alpha(sigma2, nu, y, x, x_selected, alpha, a, m).reshape((a * m, 1))  # (a, m)
+        grad_new = grad_alpha(sigma2, nu, y, x, X_selected, alpha, A, m).reshape((a * m, 1))  # (a, m)
 
-        # Update g^i
+        # update g^i
         g = (W_bar @ g + (grad_new - grad_old))
 
         grad_old = grad_new
@@ -40,8 +36,8 @@ def gradient_tracking(x, y, x_selected, a, nu, sigma2, alpha_star, W, lr, n_epoc
         alpha_list_agent.append(alpha.reshape(a, m))
         alpha_mean_list.append(alpha.reshape(a, m).mean(axis=0))
 
-        for agent_idx in range(a):
-            optimal_gaps[agent_idx].append(np.linalg.norm(alpha.reshape(a, m)[agent_idx] - alpha_star))
+        for agent in range(a):
+            optimal_gaps[agent].append(np.linalg.norm(alpha.reshape(a, m)[agent] - alpha_star))
 
     alpha_optim = alpha.reshape(a, m).mean(axis=0)
 
@@ -55,8 +51,9 @@ if __name__ == "__main__":
     sigma2 = 0.25
     nu = 1
     beta = 10
-    n_epochs = 100
+    n_epochs = 20000
     sigma = 0.5
+    step_size = 0.002
 
     # Generate data
     x_n = x[:n] 
@@ -64,9 +61,9 @@ if __name__ == "__main__":
 
     sel = [i for i in range(n)]
     ind = np.random.choice(sel, m, replace=False)
-    x_selected = np.array([x[i] for i in ind])
-    Kmm = compute_kernel_matrix(x_selected, x_selected)
-    Knm = compute_kernel_matrix(x_n, x_selected)
+    X_selected = np.array([x[i] for i in ind])
+    Kmm = compute_kernel_matrix(X_selected, X_selected)
+    Knm = compute_kernel_matrix(x_n, X_selected)
     alpha_star = compute_alpha_star(Kmm, Knm, y_n, sigma2, nu)
 
     #W = np.ones((a, a))
@@ -76,8 +73,10 @@ if __name__ == "__main__":
     #W = small_world_graph(a)
 
     K = compute_kernel_matrix(x_n, x_n)
-    selected_pts_agents = np.array_split(np.random.permutation(n), a)
-    step_size = 0.002
+    N = np.arange(n)
+    np.random.shuffle(N)
+    A = np.array_split(N, a)
+
 
     start = time.time()
     alpha_optimal = compute_alpha_star(Kmm, Knm, y_n, sigma2, nu)
@@ -87,22 +86,22 @@ if __name__ == "__main__":
     start = time.time()
 
     opt_gaps, alpha_optim, alpha_list, alpha_mean_list = gradient_tracking(
-        x_n, y_n, x_selected, a, nu, sigma2, alpha_optimal, W, step_size, n_epochs=10000)
+        x_n, y_n, X_selected, A, nu, sigma2, alpha_optimal, W, step_size, n_epochs=n_epochs)
     end = time.time()
-    print(f'alpha optimal with DGD : {alpha_optim}')
+    print(f'alpha optimal with Gradient Tracking : {alpha_optim}')
     print(
-        f'Time to compute alpha optimal with DGD : {end - start}')
+        f'Time to compute alpha optimal with Gradient Tracking : {end - start}')
     
     agent_1 = np.linalg.norm(np.array(
-        [alpha_list[i][0] for i in range(len(alpha_list))]) - alpha_optim, axis=1)
+        [alpha_list[i][0] for i in range(len(alpha_list))]) - alpha_optimal, axis=1)
     agent_2 = np.linalg.norm(np.array(
-        [alpha_list[i][1] for i in range(len(alpha_list))]) - alpha_optim, axis=1)
+        [alpha_list[i][1] for i in range(len(alpha_list))]) - alpha_optimal, axis=1)
     agent_3 = np.linalg.norm(np.array(
-        [alpha_list[i][2] for i in range(len(alpha_list))]) - alpha_optim, axis=1)
+        [alpha_list[i][2] for i in range(len(alpha_list))]) - alpha_optimal, axis=1)
     agent_4 = np.linalg.norm(np.array(
-        [alpha_list[i][3] for i in range(len(alpha_list))]) - alpha_optim, axis=1)
+        [alpha_list[i][3] for i in range(len(alpha_list))]) - alpha_optimal, axis=1)
     agent_5 = np.linalg.norm(np.array(
-        [alpha_list[i][4] for i in range(len(alpha_list))]) - alpha_optim, axis=1)
+        [alpha_list[i][4] for i in range(len(alpha_list))]) - alpha_optimal, axis=1)
 
     plt.plot(agent_1, label='Agent 1', color='blue')
     plt.plot(agent_2, label='Agent 2', color='red')
@@ -113,7 +112,7 @@ if __name__ == "__main__":
     plt.ylabel('Optimality gap (norm)')
     plt.xscale("log")
     plt.yscale("log")
-    #plt.savefig('opt_gaps_DGD_with_agents_scalelog.png', bbox_inches='tight')
+    #plt.savefig('opt_gaps_Gradient Tracking_with_agents_scalelog.png', bbox_inches='tight')
     plt.grid()
     plt.show()
     

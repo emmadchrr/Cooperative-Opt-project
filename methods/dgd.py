@@ -2,32 +2,28 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pickle
 import networkx as nx
-import sys
-import os
 from utils import *
 import time
 
-def DGD(X, Y, X_selected, a, nu, sigma2, alpha_star, W, step_size, n_epochs=500):
+def DGD(X, Y, X_selected, A, nu, sigma2, alpha_star, W, step_size, n_epochs=500):
     """
     Decentralized Gradient Descent (DGD) optimisé.
     """
     m = X_selected.shape[0]
+    a = len(A)
     
     # Initialization of alpha
     alpha = np.zeros((a * m, 1))
     
     #Normalized Weight Matrix
     W_bar = np.kron(W / 3, np.eye(m))
-    
-    # Kernel computation between selected points
-    Kmm = compute_kernel_matrix(X_selected, X_selected)
-    
+        
     optimal_gaps = [[] for _ in range(a)]
     alpha_list_agent = []
     alpha_mean_list = []
     
     for _ in range(n_epochs):
-        grad = grad_alpha(sigma2, nu, Y, X, X_selected, alpha, a, m)
+        grad = grad_alpha(sigma2, nu, Y, X, X_selected, alpha, A, m)
         alpha = W_bar @ alpha - step_size * grad.reshape(a * m, 1)
         alpha_list_agent.append(alpha.reshape(a, m))
         alpha_mean_list.append(alpha.reshape(a, m).mean(axis=0))
@@ -49,6 +45,7 @@ if __name__ == "__main__":
     beta = 10
     n_epochs = 100
     sigma = 0.5
+    step_size = 0.002
 
     # Generate data
     x_n = x[:n] 
@@ -62,13 +59,15 @@ if __name__ == "__main__":
     alpha_star = compute_alpha_star(Kmm, Knm, y_n, sigma2, nu)
     #W = np.ones((a, a))
     #W = W_base(a)
-    W = W_base_bis(a)
-    #W = fully_connected_graph(a)
+    # W = W_base_bis(a)
+    W = fully_connected_graph(a)
     #W = linear_graph(a)
     #W = small_world_graph(a)
     K = compute_kernel_matrix(x_n, x_n)
-    selected_pts_agents = np.array_split(np.random.permutation(n), a)
-    step_size = 0.002
+    N = np.arange(n)
+    np.random.shuffle(N)
+    A = np.array_split(N, a)
+
 
     start = time.time()
     alpha_optimal = compute_alpha_star(Kmm, Knm, y_n, sigma2, nu)
@@ -78,35 +77,18 @@ if __name__ == "__main__":
     start = time.time()
 
     opt_gaps, alpha_optim, alpha_list, alpha_mean_list = DGD(
-        x_n, y_n, x_selected, a, nu, sigma2, alpha_optimal, W, step_size, n_epochs=10000)
+        x_n, y_n, x_selected, A, nu, sigma2, alpha_optimal, W, step_size, n_epochs=n_epochs)
     end = time.time()
     print(f'alpha optimal with DGD : {alpha_optim}')
     print(
         f'Time to compute alpha optimal with DGD : {end - start}')
 
-    agent_1 = np.linalg.norm(np.array(
-        [alpha_list[i][0] for i in range(len(alpha_list))]) - alpha_optim, axis=1)
-    agent_2 = np.linalg.norm(np.array(
-        [alpha_list[i][1] for i in range(len(alpha_list))]) - alpha_optim, axis=1)
-    agent_3 = np.linalg.norm(np.array(
-        [alpha_list[i][2] for i in range(len(alpha_list))]) - alpha_optim, axis=1)
-    agent_4 = np.linalg.norm(np.array(
-        [alpha_list[i][3] for i in range(len(alpha_list))]) - alpha_optim, axis=1)
-    agent_5 = np.linalg.norm(np.array(
-        [alpha_list[i][4] for i in range(len(alpha_list))]) - alpha_optim, axis=1)
-
-    plt.plot(agent_1, label='Agent 1', color='blue')
-    plt.plot(agent_2, label='Agent 2', color='red')
-    plt.plot(agent_3, label='Agent 3', color='green')
-    plt.plot(agent_4, label='Agent 4', color='orange')
-    plt.plot(agent_5, label='Agent 5', color='purple')
-    plt.xlabel('Iterations')
-    plt.ylabel('Optimality gap (norm)')
-    plt.xscale("log")
-    plt.yscale("log")
-    #plt.savefig('opt_gaps_DGD_with_agents_scalelog.png', bbox_inches='tight')
-    plt.grid()
-    plt.show()
+    plot_optimality_gaps(
+        alpha_list, 
+        alpha_optimal, 
+        log_scale=True, 
+        save_path='opt_gaps_DGD_with_agents_scalelog.png'  # Optional
+    )
 
     #with open('first_database.pkl', 'rb') as f:
     #    x, y = pickle.load(f)

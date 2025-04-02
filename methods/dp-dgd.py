@@ -1,11 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
-import networkx as nx
-import sys
-import os
 from utils import *
-import time
 
 def DGD_DP(X, Y, X_selected, a, nu, sigma2, alpha_star, W, epsilon, n_epochs=500):
     """
@@ -68,7 +64,7 @@ if __name__ == "__main__":
     with open('first_database.pkl', 'rb') as f:
         x, y = pickle.load(f)
     
-    n, m, a = 100, 10, 5
+    n, m, a = 1000, 33, 100
     sigma2 = 0.25
     nu = 1
     beta = 10

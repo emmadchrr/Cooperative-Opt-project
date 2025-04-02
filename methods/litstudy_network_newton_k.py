@@ -27,7 +27,7 @@ def network_newton(X, Y, X_selected, A, nu, sigma2, alpha_star, W, step_size, K,
 
     for i in range(n_epochs):
         
-        g_t = (np.eye(a * m) - Z) @ alpha + step_size * grad_alpha_(sigma2, nu, Y, X, X_selected, alpha, A, m).reshape(a * m, 1)
+        g_t = (np.eye(a * m) - Z) @ alpha + step_size * grad_alpha(sigma2, nu, Y, X, X_selected, alpha, A, m).reshape(a * m, 1)
         
         d = -np.linalg.inv(D) @ g_t
         
@@ -62,8 +62,8 @@ if __name__ == "__main__":
     beta = 10
     n_epochs = 10000
     sigma = 0.5
-    K = 10# Order of approximation in NN-K
-    step_size = 0.05
+    K = 2# Order of approximation in NN-K
+    step_size = 0.002
 
     x_n = x[:n]
     y_n = y[:n]
