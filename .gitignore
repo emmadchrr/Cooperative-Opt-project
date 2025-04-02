@@ -3,5 +3,6 @@ __pycache__/
 figures/
 *.ipynb
 tempCodeRunnerFile.py
+old/
 
 *.png
